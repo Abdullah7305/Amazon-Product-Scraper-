@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: ai-scraper
+Version: 0.1.0
+Summary: Reliable AI-powered Amazon scraper
+Requires-Python: >=3.10
+Requires-Dist: scrapling
+Requires-Dist: aiofiles
+Requires-Dist: scrapy
+Requires-Dist: google-genai
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"

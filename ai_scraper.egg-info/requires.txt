@@ -1,0 +1,7 @@
+scrapling
+aiofiles
+scrapy
+google-genai
+
+[dev]
+pytest

@@ -1,0 +1,13 @@
+pyproject.toml
+ai_scraper.egg-info/PKG-INFO
+ai_scraper.egg-info/SOURCES.txt
+ai_scraper.egg-info/dependency_links.txt
+ai_scraper.egg-info/requires.txt
+ai_scraper.egg-info/top_level.txt
+src/config/project_settings.py
+src/fetcher/request_fetcher.py
+src/items/items.py
+src/parser/product_parser.py
+src/pipeline/amazon_pipeline.py
+src/reliability/antibot_detection.py
+src/service/openai_llm.py
