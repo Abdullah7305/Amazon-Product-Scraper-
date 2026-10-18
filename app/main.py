@@ -11,6 +11,7 @@ from src.items.items import FailedProductItem, ProductDetailItem
 from src.parser.product_parser import AmazonProductParser
 from src.run import Engine
 from fastapi.middleware.cors import CORSMiddleware
+from src.utils.cache_manager import scrape_cache
 
 # 1. Setup SlowAPI Rate Limiter
 try:
@@ -75,12 +76,27 @@ async def health():
 async def _async_scrape_task(
     urls: List[str],
 ) -> Tuple[List[ProductResponse], List[str]]:
-    """Runs the Engine generator and parser inside an isolated event loop."""
-    engine = Engine(product_urls=urls)
-    parser = AmazonProductParser()
-
     products: List[ProductResponse] = []
+    urls_to_scrape: List[str] = []
     failed_urls: List[str] = []
+
+    # 1. Check Cache First for all requested URLs
+    for url in urls:
+        cached_data = await scrape_cache.get(url)
+        if cached_data:
+            # Reconstruct ProductResponse from Cached dict/object
+            products.append(ProductResponse(**cached_data))
+        else:
+            urls_to_scrape.append(url)
+
+    # 2. If all URLs were in cache, return immediately!
+    if not urls_to_scrape:
+        logger.info("[API] All requested URLs served from Cache!")
+        return products, failed_urls
+
+    # 3. Process remaining un-cached URLs using Engine
+    engine = Engine(product_urls=urls_to_scrape)
+    parser = AmazonProductParser()
 
     try:
         async for page in engine.run():
@@ -88,9 +104,14 @@ async def _async_scrape_task(
                 item = parser.parse(html=page.html, url=page.url)
 
                 if isinstance(item, ProductDetailItem):
-                    product_data = asdict(item)
-                    products.append(ProductResponse(**product_data))
-                    logger.info(f"[API] Parsed successfully: {item.asin}")
+                    product_dict = asdict(item)
+                    product_res = ProductResponse(**product_dict)
+                    products.append(product_res)
+
+                    # Save to Cache for future requests
+                    await scrape_cache.set(page.url, product_dict)
+
+                    logger.info(f"[API] Parsed and Cached successfully: {item.asin}")
 
                 elif isinstance(item, FailedProductItem):
                     failed_urls.append(page.url)
